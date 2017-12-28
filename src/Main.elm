@@ -22,17 +22,12 @@ type GameState
 
 width : number
 width =
-    300
+    30
 
 
 height : number
 height =
-    200
-
-
-pixelSize : number
-pixelSize =
-    10
+    20
 
 
 type alias Path =
@@ -57,7 +52,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { path = [ ( 0, pixelSize ) ]
+    ( { path = [ ( 0, 1 ) ]
       , direction = Up
       , state = Running
       }
@@ -75,16 +70,16 @@ move model =
             | path =
                 case model.direction of
                     Up ->
-                        ( x, y + pixelSize ) :: model.path
+                        ( x, y + 1 ) :: model.path
 
                     Down ->
-                        ( x, y - pixelSize ) :: model.path
+                        ( x, y - 1 ) :: model.path
 
                     Left ->
-                        ( x - pixelSize, y ) :: model.path
+                        ( x - 1, y ) :: model.path
 
                     Right ->
-                        ( x + pixelSize, y ) :: model.path
+                        ( x + 1, y ) :: model.path
         }
 
 
@@ -153,27 +148,34 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ h1 []
-            [ text "Tron" ]
-        , span []
-            [ text <|
-                case model.state of
-                    Running ->
-                        "Race!"
+    let
+        pixelSize =
+            10
+    in
+        div []
+            [ h1 []
+                [ text "Tron" ]
+            , span []
+                [ text <|
+                    case model.state of
+                        Running ->
+                            "Race!"
 
-                    GameOver ->
-                        "Game over"
+                        GameOver ->
+                            "Game over"
+                ]
+            , div [ class "board" ]
+                [ model.path
+                    |> List.map (Tuple.mapFirst <| (*) pixelSize)
+                    |> List.map (Tuple.mapSecond <| (*) pixelSize)
+                    |> Collage.path
+                    |> Collage.traced
+                        { defaultLine | width = pixelSize }
+                    |> List.singleton
+                    |> Collage.collage (width * pixelSize + pixelSize // 2) (height * pixelSize + pixelSize // 2)
+                    |> Element.toHtml
+                ]
             ]
-        , div [ class "board" ]
-            [ Collage.path model.path
-                |> Collage.traced
-                    { defaultLine | width = pixelSize }
-                |> List.singleton
-                |> Collage.collage (width + pixelSize // 2) (height + pixelSize // 2)
-                |> Element.toHtml
-            ]
-        ]
 
 
 main : Program Never Model Msg
