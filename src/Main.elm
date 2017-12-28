@@ -7,6 +7,7 @@ import Element
 import Color
 import Time exposing (Time)
 import Keyboard
+import List.Nonempty exposing (Nonempty, (:::))
 
 
 type alias Model =
@@ -33,7 +34,7 @@ height =
 
 
 type alias Path =
-    List Pos
+    Nonempty Pos
 
 
 type Direction
@@ -54,7 +55,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { path = [ ( 0, 0 ) ]
+    ( { path = List.Nonempty.fromElement ( 0, 0 )
       , direction = Up
       , state = NotStarted
       }
@@ -66,22 +67,22 @@ move : Model -> Model
 move model =
     let
         ( x, y ) =
-            List.head model.path |> Maybe.withDefault ( 0, 0 )
+            List.Nonempty.head model.path
     in
         { model
             | path =
                 case model.direction of
                     Up ->
-                        ( x, y + 1 ) :: model.path
+                        ( x, y + 1 ) ::: model.path
 
                     Down ->
-                        ( x, y - 1 ) :: model.path
+                        ( x, y - 1 ) ::: model.path
 
                     Left ->
-                        ( x - 1, y ) :: model.path
+                        ( x - 1, y ) ::: model.path
 
                     Right ->
-                        ( x + 1, y ) :: model.path
+                        ( x + 1, y ) ::: model.path
         }
 
 
@@ -89,10 +90,10 @@ checkPosition : Model -> Model
 checkPosition model =
     let
         (( x, y ) as head) =
-            List.head model.path |> Maybe.withDefault ( 0, 0 )
+            List.Nonempty.head model.path
 
         tail =
-            List.tail model.path |> Maybe.withDefault []
+            List.Nonempty.tail model.path
     in
         { model
             | state =
@@ -184,9 +185,10 @@ view model =
                         if model.state == NotStarted then
                             Collage.square pixelSize
                                 |> Collage.filled Color.black
-                                |> Collage.move (List.head model.path |> Maybe.withDefault ( 0, 0 ))
+                                |> Collage.move (List.Nonempty.head model.path)
                         else
                             model.path
+                                |> List.Nonempty.toList
                                 |> List.map (Tuple.mapFirst <| (*) pixelSize)
                                 |> List.map (Tuple.mapSecond <| (*) pixelSize)
                                 |> Collage.path
