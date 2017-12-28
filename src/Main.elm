@@ -16,18 +16,19 @@ type alias Model =
 
 
 type GameState
-    = Running
+    = NotStarted
+    | Running
     | GameOver
 
 
 width : number
 width =
-    30
+    50
 
 
 height : number
 height =
-    20
+    40
 
 
 type alias Path =
@@ -52,9 +53,9 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { path = [ ( 0, 1 ) ]
+    ( { path = [ ( 0, 0 ) ]
       , direction = Up
-      , state = Running
+      , state = NotStarted
       }
     , Cmd.none
     )
@@ -127,6 +128,11 @@ changeDirection keyCode model =
     }
 
 
+setState : GameState -> Model -> Model
+setState gameState model =
+    { model | state = gameState }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -137,13 +143,17 @@ update msg model =
                         |> move
                         |> checkPosition
 
-                GameOver ->
+                _ ->
                     model
             , Cmd.none
             )
 
         KeyPress keyCode ->
-            ( changeDirection keyCode model, Cmd.none )
+            ( model
+                |> setState Running
+                |> changeDirection keyCode
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
@@ -158,6 +168,9 @@ view model =
             , span []
                 [ text <|
                     case model.state of
+                        NotStarted ->
+                            "Press SPACE to begin"
+
                         Running ->
                             "Race!"
 
@@ -191,11 +204,14 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.state of
-        GameOver ->
-            Sub.none
-
         Running ->
             Sub.batch
                 [ Time.every (Time.millisecond * 100) Tick
                 , Keyboard.downs KeyPress
                 ]
+
+        NotStarted ->
+            Keyboard.downs KeyPress
+
+        _ ->
+            Sub.none
