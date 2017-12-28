@@ -170,7 +170,7 @@ view model =
                 |> Collage.traced
                     { defaultLine | width = pixelSize }
                 |> List.singleton
-                |> Collage.collage width height
+                |> Collage.collage (width + pixelSize // 2) (height + pixelSize // 2)
                 |> Element.toHtml
             ]
         ]
