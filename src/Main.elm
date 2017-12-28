@@ -30,6 +30,11 @@ height =
     200
 
 
+pixelSize : number
+pixelSize =
+    10
+
+
 type alias Path =
     List Pos
 
@@ -52,7 +57,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { path = [ ( 0, 10 ) ]
+    ( { path = [ ( 0, pixelSize ) ]
       , direction = Up
       , state = Running
       }
@@ -70,16 +75,16 @@ move model =
             | path =
                 case model.direction of
                     Up ->
-                        ( x, y + 10 ) :: model.path
+                        ( x, y + pixelSize ) :: model.path
 
                     Down ->
-                        ( x, y - 10 ) :: model.path
+                        ( x, y - pixelSize ) :: model.path
 
                     Left ->
-                        ( x - 10, y ) :: model.path
+                        ( x - pixelSize, y ) :: model.path
 
                     Right ->
-                        ( x + 10, y ) :: model.path
+                        ( x + pixelSize, y ) :: model.path
         }
 
 
@@ -163,7 +168,7 @@ view model =
         , div [ class "board" ]
             [ Collage.path model.path
                 |> Collage.traced
-                    { defaultLine | width = 10 }
+                    { defaultLine | width = pixelSize }
                 |> List.singleton
                 |> Collage.collage width height
                 |> Element.toHtml
