@@ -186,9 +186,14 @@ main =
         }
 
 
-subscriptions : model -> Sub Msg
+subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Time.every (Time.millisecond * 100) Tick
-        , Keyboard.downs KeyPress
-        ]
+    case model.state of
+        GameOver ->
+            Sub.none
+
+        Running ->
+            Sub.batch
+                [ Time.every (Time.millisecond * 100) Tick
+                , Keyboard.downs KeyPress
+                ]
