@@ -11,7 +11,13 @@ import Keyboard
 type alias Model =
     { path : Path
     , direction : Direction
+    , state : GameState
     }
+
+
+type GameState
+    = Running
+    | GameOver
 
 
 width : number
@@ -46,31 +52,57 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { path = [ ( 0, 0 ), ( 0, 10 ) ]
+    ( { path = [ ( 0, 10 ) ]
       , direction = Up
+      , state = Running
       }
     , Cmd.none
     )
 
 
-move : Direction -> Path -> Path
-move direction path =
+move : Model -> Model
+move model =
     let
         ( x, y ) =
-            List.head path |> Maybe.withDefault ( 0, 0 )
+            List.head model.path |> Maybe.withDefault ( 0, 0 )
     in
-        case direction of
-            Up ->
-                ( x, y + 10 ) :: path
+        { model
+            | path =
+                case model.direction of
+                    Up ->
+                        ( x, y + 10 ) :: model.path
 
-            Down ->
-                ( x, y - 10 ) :: path
+                    Down ->
+                        ( x, y - 10 ) :: model.path
 
-            Left ->
-                ( x - 10, y ) :: path
+                    Left ->
+                        ( x - 10, y ) :: model.path
 
-            Right ->
-                ( x + 10, y ) :: path
+                    Right ->
+                        ( x + 10, y ) :: model.path
+        }
+
+
+checkPosition : Model -> Model
+checkPosition model =
+    let
+        (( x, y ) as head) =
+            List.head model.path |> Maybe.withDefault ( 0, 0 )
+
+        tail =
+            List.tail model.path |> Maybe.withDefault []
+    in
+        { model
+            | state =
+                if abs x > (width / 2) then
+                    GameOver
+                else if abs y > (height / 2) then
+                    GameOver
+                else if List.member head tail then
+                    GameOver
+                else
+                    Running
+        }
 
 
 changeDirection : Keyboard.KeyCode -> Model -> Model
@@ -99,7 +131,14 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Tick _ ->
-            ( { model | path = move model.direction model.path }
+            ( case model.state of
+                Running ->
+                    model
+                        |> move
+                        |> checkPosition
+
+                GameOver ->
+                    model
             , Cmd.none
             )
 
@@ -110,7 +149,17 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [] [ text "Tron" ]
+        [ h1 []
+            [ text "Tron" ]
+        , span []
+            [ text <|
+                case model.state of
+                    Running ->
+                        "Race!"
+
+                    GameOver ->
+                        "Game over"
+            ]
         , div [ class "board" ]
             [ Collage.path model.path
                 |> Collage.traced
