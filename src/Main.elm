@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Collage exposing (defaultLine)
 import Element
+import Color
 import Time exposing (Time)
 import Keyboard
 
@@ -178,15 +179,27 @@ view model =
                             "Game over"
                 ]
             , div [ class "board" ]
-                [ model.path
-                    |> List.map (Tuple.mapFirst <| (*) pixelSize)
-                    |> List.map (Tuple.mapSecond <| (*) pixelSize)
-                    |> Collage.path
-                    |> Collage.traced
-                        { defaultLine | width = pixelSize }
-                    |> List.singleton
-                    |> Collage.collage (width * pixelSize + pixelSize // 2) (height * pixelSize + pixelSize // 2)
-                    |> Element.toHtml
+                [ let
+                    snake =
+                        if model.state == NotStarted then
+                            Collage.square pixelSize
+                                |> Collage.filled Color.black
+                                |> Collage.move (List.head model.path |> Maybe.withDefault ( 0, 0 ))
+                        else
+                            model.path
+                                |> List.map (Tuple.mapFirst <| (*) pixelSize)
+                                |> List.map (Tuple.mapSecond <| (*) pixelSize)
+                                |> Collage.path
+                                |> Collage.traced
+                                    { defaultLine
+                                        | width = pixelSize
+                                        , cap = Collage.Padded
+                                    }
+                  in
+                    snake
+                        |> List.singleton
+                        |> Collage.collage (width * pixelSize + pixelSize // 2) (height * pixelSize + pixelSize // 2)
+                        |> Element.toHtml
                 ]
             ]
 
