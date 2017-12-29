@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 import Collage exposing (defaultLine)
 import Element
 import Color
@@ -51,6 +52,7 @@ type alias Pos =
 type Msg
     = Tick Time.Time
     | KeyPress Keyboard.KeyCode
+    | NewGame
 
 
 init : ( Model, Cmd Msg )
@@ -157,6 +159,9 @@ update msg model =
             , Cmd.none
             )
 
+        NewGame ->
+            init
+
 
 view : Model -> Html Msg
 view model =
@@ -205,7 +210,7 @@ view model =
                                 "game over"
                     ]
                 , if model.state == GameOver then
-                    button [ class "new-game" ] [ text "new game" ]
+                    button [ class "new-game", onClick NewGame ] [ text "new game" ]
                   else
                     text ""
                 ]
