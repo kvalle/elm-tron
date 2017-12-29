@@ -12,8 +12,8 @@ import List.Nonempty exposing (Nonempty, (:::))
 
 
 type alias Model =
-    { player1 : Player
-    , player2 : Player
+    { red : Player
+    , blue : Player
     , state : GameState
     }
 
@@ -22,6 +22,11 @@ type alias Player =
     { path : Path
     , direction : Direction
     }
+
+
+type Color
+    = Red
+    | Blue
 
 
 type GameState
@@ -59,18 +64,17 @@ type Msg
     = NoOp
     | Move
     | Go
-    | ChangeDirectionPlayer1 Direction
-    | ChangeDirectionPlayer2 Direction
+    | ChangeDirection Color Direction
     | NewGame
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { player1 =
+    ( { red =
             { path = List.Nonempty.fromElement ( -3, 0 )
             , direction = Up
             }
-      , player2 =
+      , blue =
             { path = List.Nonempty.fromElement ( 3, 0 )
             , direction = Up
             }
@@ -78,6 +82,26 @@ init =
       }
     , Cmd.none
     )
+
+
+setPlayer : Color -> Player -> Model -> Model
+setPlayer color player model =
+    case color of
+        Red ->
+            { model | red = player }
+
+        Blue ->
+            { model | blue = player }
+
+
+getPlayer : Color -> Model -> Player
+getPlayer color =
+    case color of
+        Red ->
+            .red
+
+        Blue ->
+            .blue
 
 
 move : Player -> Player
@@ -111,78 +135,49 @@ isOutsideBoard (( x, y ) as pos) =
 checkPosition : Model -> Model
 checkPosition model =
     let
-        player1Head =
-            List.Nonempty.head model.player1.path
+        redHead =
+            List.Nonempty.head <| model.red.path
 
-        player1Tail =
-            List.Nonempty.tail model.player1.path
+        redTail =
+            List.Nonempty.tail <| model.red.path
 
-        player2Head =
-            List.Nonempty.head model.player2.path
+        blueHead =
+            List.Nonempty.head <| model.blue.path
 
-        player2Tail =
-            List.Nonempty.tail model.player2.path
+        blueTail =
+            List.Nonempty.tail <| model.blue.path
     in
         { model
             | state =
-                if isOutsideBoard player1Head then
+                if isOutsideBoard redHead then
                     GameOver
-                else if isOutsideBoard player2Head then
+                else if isOutsideBoard blueHead then
                     GameOver
-                else if List.member player1Head (player1Tail ++ player2Tail) then
+                else if List.member redHead (redTail ++ blueTail) then
                     GameOver
-                else if List.member player2Head (player1Tail ++ player2Tail) then
+                else if List.member blueHead (redTail ++ blueTail) then
                     GameOver
                 else
                     Running
         }
 
 
-setDirectionPlayer1 : Direction -> Model -> Model
-setDirectionPlayer1 direction model =
+setDirection : Direction -> Player -> Player
+setDirection direction player =
     let
-        player1 =
-            model.player1
-
         impossibleChange from to =
             List.member ( from, to )
                 [ ( Up, Down ), ( Down, Up ), ( Left, Right ), ( Right, Left ) ]
     in
-        if impossibleChange direction player1.direction then
-            model
+        if impossibleChange direction player.direction then
+            player
         else
-            { model | player1 = { player1 | direction = direction } }
-
-
-setDirectionPlayer2 : Direction -> Model -> Model
-setDirectionPlayer2 direction model =
-    let
-        player2 =
-            model.player2
-
-        impossibleChange from to =
-            List.member ( from, to )
-                [ ( Up, Down ), ( Down, Up ), ( Left, Right ), ( Right, Left ) ]
-    in
-        if impossibleChange direction player2.direction then
-            model
-        else
-            { model | player2 = { player2 | direction = direction } }
+            { player | direction = direction }
 
 
 setState : GameState -> Model -> Model
 setState gameState model =
     { model | state = gameState }
-
-
-setPlayer1 : Player -> Model -> Model
-setPlayer1 player model =
-    { model | player1 = player }
-
-
-setPlayer2 : Player -> Model -> Model
-setPlayer2 player model =
-    { model | player2 = player }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -195,8 +190,8 @@ update msg model =
             ( case model.state of
                 Running ->
                     model
-                        |> setPlayer1 (move model.player1)
-                        |> setPlayer2 (move model.player2)
+                        |> setPlayer Red (move model.red)
+                        |> setPlayer Blue (move model.blue)
                         |> checkPosition
 
                 _ ->
@@ -204,13 +199,8 @@ update msg model =
             , Cmd.none
             )
 
-        ChangeDirectionPlayer1 direction ->
-            ( model |> setDirectionPlayer1 direction
-            , Cmd.none
-            )
-
-        ChangeDirectionPlayer2 direction ->
-            ( model |> setDirectionPlayer2 direction
+        ChangeDirection color direction ->
+            ( model |> setPlayer color (setDirection direction <| getPlayer color model)
             , Cmd.none
             )
 
@@ -258,35 +248,35 @@ gameControlKeys keyCode =
 
         37 ->
             -- Arrow left
-            ChangeDirectionPlayer1 Left
+            ChangeDirection Blue Left
 
         38 ->
             -- Arrow up
-            ChangeDirectionPlayer1 Up
+            ChangeDirection Blue Up
 
         39 ->
             -- Arrow right
-            ChangeDirectionPlayer1 Right
+            ChangeDirection Blue Right
 
         40 ->
             -- Arrow down
-            ChangeDirectionPlayer1 Down
+            ChangeDirection Blue Down
 
         65 ->
             -- A key
-            ChangeDirectionPlayer2 Left
+            ChangeDirection Red Left
 
         87 ->
             -- W key
-            ChangeDirectionPlayer2 Up
+            ChangeDirection Red Up
 
         68 ->
             -- D key
-            ChangeDirectionPlayer2 Right
+            ChangeDirection Red Right
 
         83 ->
             -- S key
-            ChangeDirectionPlayer2 Down
+            ChangeDirection Red Down
 
         _ ->
             NoOp
@@ -324,8 +314,8 @@ view model =
                                     }
 
                     players =
-                        [ path model.player1 Color.red
-                        , path model.player2 Color.blue
+                        [ path model.red Color.red
+                        , path model.blue Color.blue
                         ]
                   in
                     players
