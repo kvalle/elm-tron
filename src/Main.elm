@@ -143,8 +143,15 @@ setDirectionPlayer1 direction model =
     let
         player1 =
             model.player1
+
+        impossibleChange from to =
+            List.member ( from, to )
+                [ ( Up, Down ), ( Down, Up ), ( Left, Right ), ( Right, Left ) ]
     in
-        { model | player1 = { player1 | direction = direction } }
+        if impossibleChange direction player1.direction then
+            model
+        else
+            { model | player1 = { player1 | direction = direction } }
 
 
 setDirectionPlayer2 : Direction -> Model -> Model
@@ -152,8 +159,15 @@ setDirectionPlayer2 direction model =
     let
         player2 =
             model.player2
+
+        impossibleChange from to =
+            List.member ( from, to )
+                [ ( Up, Down ), ( Down, Up ), ( Left, Right ), ( Right, Left ) ]
     in
-        { model | player2 = { player2 | direction = direction } }
+        if impossibleChange direction player2.direction then
+            model
+        else
+            { model | player2 = { player2 | direction = direction } }
 
 
 setState : GameState -> Model -> Model
