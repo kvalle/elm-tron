@@ -56,8 +56,11 @@ type alias Pos =
 
 
 type Msg
-    = Tick Time.Time
-    | KeyPress Keyboard.KeyCode
+    = NoOp
+    | Tick Time.Time
+    | Go
+    | ChangeDirectionPlayer1 Direction
+    | ChangeDirectionPlayer2 Direction
     | NewGame
 
 
@@ -135,56 +138,22 @@ checkPosition model =
         }
 
 
-changeDirectionPlayer1 : Keyboard.KeyCode -> Player -> Player
-changeDirectionPlayer1 keyCode player =
-    { player
-        | direction =
-            case keyCode of
-                37 ->
-                    -- Arrow left
-                    Left
-
-                38 ->
-                    -- Arrow up
-                    Up
-
-                39 ->
-                    -- Arrow right
-                    Right
-
-                40 ->
-                    -- Arrow down
-                    Down
-
-                _ ->
-                    player.direction
-    }
+setDirectionPlayer1 : Direction -> Model -> Model
+setDirectionPlayer1 direction model =
+    let
+        player1 =
+            model.player1
+    in
+        { model | player1 = { player1 | direction = direction } }
 
 
-changeDirectionPlayer2 : Keyboard.KeyCode -> Player -> Player
-changeDirectionPlayer2 keyCode player =
-    { player
-        | direction =
-            case keyCode of
-                65 ->
-                    -- A key
-                    Left
-
-                87 ->
-                    -- W key
-                    Up
-
-                68 ->
-                    -- D key
-                    Right
-
-                83 ->
-                    -- S key
-                    Down
-
-                _ ->
-                    player.direction
-    }
+setDirectionPlayer2 : Direction -> Model -> Model
+setDirectionPlayer2 direction model =
+    let
+        player2 =
+            model.player2
+    in
+        { model | player2 = { player2 | direction = direction } }
 
 
 setState : GameState -> Model -> Model
@@ -205,6 +174,9 @@ setPlayer2 player model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
         Tick _ ->
             ( case model.state of
                 Running ->
@@ -218,11 +190,18 @@ update msg model =
             , Cmd.none
             )
 
-        KeyPress keyCode ->
-            ( model
-                |> setState Running
-                |> setPlayer1 (changeDirectionPlayer1 keyCode model.player1)
-                |> setPlayer2 (changeDirectionPlayer2 keyCode model.player2)
+        ChangeDirectionPlayer1 direction ->
+            ( model |> setDirectionPlayer1 direction
+            , Cmd.none
+            )
+
+        ChangeDirectionPlayer2 direction ->
+            ( model |> setDirectionPlayer2 direction
+            , Cmd.none
+            )
+
+        Go ->
+            ( model |> setState Running
             , Cmd.none
             )
 
@@ -246,14 +225,57 @@ subscriptions model =
         Running ->
             Sub.batch
                 [ Time.every (Time.millisecond * 100) Tick
-                , Keyboard.downs KeyPress
+                , Keyboard.downs gameControlKeys
                 ]
 
         NotStarted ->
-            Keyboard.downs KeyPress
+            Keyboard.downs gameControlKeys
 
         _ ->
             Sub.none
+
+
+gameControlKeys : Keyboard.KeyCode -> Msg
+gameControlKeys keyCode =
+    case keyCode of
+        32 ->
+            -- Space
+            Go
+
+        37 ->
+            -- Arrow left
+            ChangeDirectionPlayer1 Left
+
+        38 ->
+            -- Arrow up
+            ChangeDirectionPlayer1 Up
+
+        39 ->
+            -- Arrow right
+            ChangeDirectionPlayer1 Right
+
+        40 ->
+            -- Arrow down
+            ChangeDirectionPlayer1 Down
+
+        65 ->
+            -- A key
+            ChangeDirectionPlayer2 Left
+
+        87 ->
+            -- W key
+            ChangeDirectionPlayer2 Up
+
+        68 ->
+            -- D key
+            ChangeDirectionPlayer2 Right
+
+        83 ->
+            -- S key
+            ChangeDirectionPlayer2 Down
+
+        _ ->
+            NoOp
 
 
 view : Model -> Html Msg
