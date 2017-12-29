@@ -32,7 +32,13 @@ type Color
 type GameState
     = NotStarted
     | Running
-    | GameOver
+    | GameOver Winner
+
+
+type Winner
+    = RedWin
+    | BlueWin
+    | Draw
 
 
 width : number
@@ -104,62 +110,53 @@ getPlayer color =
             .blue
 
 
-move : Player -> Player
-move player =
+move : Color -> Model -> Maybe Player
+move color model =
+    let
+        player =
+            getPlayer color model
+
+        next =
+            nextPosition player
+    in
+        if validPosition next model then
+            Just { player | path = next ::: player.path }
+        else
+            Nothing
+
+
+nextPosition : Player -> Pos
+nextPosition player =
     let
         ( x, y ) =
             List.Nonempty.head player.path
     in
-        { player
-            | path =
-                case player.direction of
-                    Up ->
-                        ( x, y + 1 ) ::: player.path
+        case player.direction of
+            Up ->
+                ( x, y + 1 )
 
-                    Down ->
-                        ( x, y - 1 ) ::: player.path
+            Down ->
+                ( x, y - 1 )
 
-                    Left ->
-                        ( x - 1, y ) ::: player.path
+            Left ->
+                ( x - 1, y )
 
-                    Right ->
-                        ( x + 1, y ) ::: player.path
-        }
+            Right ->
+                ( x + 1, y )
 
 
-isOutsideBoard : Pos -> Bool
-isOutsideBoard (( x, y ) as pos) =
-    (abs x > (width / 2)) || (abs y > (height / 2))
-
-
-checkPosition : Model -> Model
-checkPosition model =
+validPosition : Pos -> Model -> Bool
+validPosition pos model =
     let
-        redHead =
-            List.Nonempty.head <| model.red.path
+        isInsideBoard ( x, y ) =
+            (abs x <= (width / 2)) && (abs y <= (height / 2))
 
-        redTail =
-            List.Nonempty.tail <| model.red.path
-
-        blueHead =
-            List.Nonempty.head <| model.blue.path
-
-        blueTail =
-            List.Nonempty.tail <| model.blue.path
+        notCrash pos =
+            not <|
+                List.member pos
+                    (List.Nonempty.toList model.red.path ++ List.Nonempty.toList model.blue.path)
     in
-        { model
-            | state =
-                if isOutsideBoard redHead then
-                    GameOver
-                else if isOutsideBoard blueHead then
-                    GameOver
-                else if List.member redHead (redTail ++ blueTail) then
-                    GameOver
-                else if List.member blueHead (redTail ++ blueTail) then
-                    GameOver
-                else
-                    Running
-        }
+        isInsideBoard pos && notCrash pos
 
 
 setDirection : Direction -> Player -> Player
@@ -189,10 +186,21 @@ update msg model =
         Move ->
             ( case model.state of
                 Running ->
-                    model
-                        |> setPlayer Red (move model.red)
-                        |> setPlayer Blue (move model.blue)
-                        |> checkPosition
+                    case ( move Red model, move Blue model ) of
+                        ( Just movedRed, Just movedBlue ) ->
+                            { model
+                                | red = movedRed
+                                , blue = movedBlue
+                            }
+
+                        ( Nothing, Nothing ) ->
+                            { model | state = GameOver Draw }
+
+                        ( Just _, Nothing ) ->
+                            { model | state = GameOver RedWin }
+
+                        ( Nothing, Just _ ) ->
+                            { model | state = GameOver BlueWin }
 
                 _ ->
                     model
@@ -297,8 +305,8 @@ view model =
                                 |> Collage.filled color
                                 |> Collage.move
                                     (List.Nonempty.head player.path
-                                        |> Tuple.mapFirst ((*) pixelSize)
-                                        |> Tuple.mapSecond ((*) pixelSize)
+                                        |> Tuple.mapFirst ((*) <| pixelSize - 1)
+                                        |> Tuple.mapSecond ((*) <| pixelSize - 1)
                                     )
                         else
                             player.path
@@ -308,7 +316,7 @@ view model =
                                 |> Collage.path
                                 |> Collage.traced
                                     { defaultLine
-                                        | width = pixelSize
+                                        | width = pixelSize - 1
                                         , cap = Collage.Padded
                                         , color = color
                                     }
@@ -327,7 +335,13 @@ view model =
                 , div [ class "new-game" ]
                     [ button
                         [ onClick NewGame
-                        , disabled <| model.state /= GameOver
+                        , disabled <|
+                            case model.state of
+                                GameOver _ ->
+                                    False
+
+                                _ ->
+                                    True
                         ]
                         [ text "new game" ]
                     ]
@@ -338,10 +352,20 @@ view model =
                                 "press SPACE to begin"
 
                             Running ->
-                                "control with ASDF and arrow keys"
+                                "control with AWSD and arrow keys"
 
-                            GameOver ->
-                                "game over"
+                            GameOver winner ->
+                                "game over, "
+                                    ++ (case winner of
+                                            RedWin ->
+                                                "red wins"
+
+                                            BlueWin ->
+                                                "blue wins"
+
+                                            Draw ->
+                                                "it's a draw"
+                                       )
                     ]
                 ]
             ]
