@@ -57,7 +57,7 @@ type alias Pos =
 
 type Msg
     = NoOp
-    | Tick Time.Time
+    | Move
     | Go
     | ChangeDirectionPlayer1 Direction
     | ChangeDirectionPlayer2 Direction
@@ -177,7 +177,7 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        Tick _ ->
+        Move ->
             ( case model.state of
                 Running ->
                     model
@@ -224,7 +224,7 @@ subscriptions model =
     case model.state of
         Running ->
             Sub.batch
-                [ Time.every (Time.millisecond * 100) Tick
+                [ Time.every (Time.millisecond * 100) (always Move)
                 , Keyboard.downs gameControlKeys
                 ]
 
