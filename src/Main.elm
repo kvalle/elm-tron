@@ -164,27 +164,13 @@ view model =
         pixelSize =
             10
     in
-        div []
-            [ h1 []
-                [ text "Tron" ]
-            , span []
-                [ text <|
-                    case model.state of
-                        NotStarted ->
-                            "Press SPACE to begin"
-
-                        Running ->
-                            "Race!"
-
-                        GameOver ->
-                            "Game over"
-                ]
-            , div [ class "board" ]
+        div [ class "game" ]
+            [ div [ class "board" ]
                 [ let
                     snake =
                         if model.state == NotStarted then
                             Collage.square pixelSize
-                                |> Collage.filled Color.black
+                                |> Collage.filled Color.red
                                 |> Collage.move (List.Nonempty.head model.path)
                         else
                             model.path
@@ -196,12 +182,32 @@ view model =
                                     { defaultLine
                                         | width = pixelSize
                                         , cap = Collage.Padded
+                                        , color = Color.red
                                     }
                   in
                     snake
                         |> List.singleton
                         |> Collage.collage (width * pixelSize + pixelSize // 2) (height * pixelSize + pixelSize // 2)
                         |> Element.toHtml
+                ]
+            , div [ class "info" ]
+                [ div [ class "title" ] [ text "TRON" ]
+                , div [ class "status" ]
+                    [ text <|
+                        case model.state of
+                            NotStarted ->
+                                "press SPACE to begin"
+
+                            Running ->
+                                ""
+
+                            GameOver ->
+                                "game over"
+                    ]
+                , if model.state == GameOver then
+                    button [ class "new-game" ] [ text "new game" ]
+                  else
+                    text ""
                 ]
             ]
 
