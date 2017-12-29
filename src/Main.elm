@@ -320,6 +320,13 @@ view model =
                 ]
             , div [ class "info" ]
                 [ div [ class "title" ] [ text "TRON" ]
+                , div [ class "new-game" ]
+                    [ button
+                        [ onClick NewGame
+                        , disabled <| model.state /= GameOver
+                        ]
+                        [ text "new game" ]
+                    ]
                 , div [ class "status" ]
                     [ text <|
                         case model.state of
@@ -327,14 +334,10 @@ view model =
                                 "press SPACE to begin"
 
                             Running ->
-                                ""
+                                "control with ASDF and arrow keys"
 
                             GameOver ->
                                 "game over"
                     ]
-                , if model.state == GameOver then
-                    button [ class "new-game", onClick NewGame ] [ text "new game" ]
-                  else
-                    text ""
                 ]
             ]
